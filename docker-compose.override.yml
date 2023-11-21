@@ -1,0 +1,31 @@
+version: '3.1'
+services:
+  opensearch:
+    image: opensearchproject/opensearch:2
+    ports:
+      - "9200:9200"  # OpenSearch REST API
+      - "9300:9300"  # OpenSearch Node-to-Node communication
+    environment:
+      - discovery.type=single-node
+      - plugins.security.ssl.http.enabled=false
+    volumes:
+      - opensearch-data:/usr/share/opensearch/data
+    networks:
+      - airflow
+# Airflow containers
+  scheduler:
+    networks:
+      - airflow
+  webserver:
+    networks:
+      - airflow
+  triggerer:
+    networks:
+      - airflow
+  postgres:
+    networks:
+      - airflow
+
+# volume for OpenSearch
+volumes:
+  opensearch-data:
