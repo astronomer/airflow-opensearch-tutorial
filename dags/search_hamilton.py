@@ -23,8 +23,7 @@ import pandas as pd
 OPENSEARCH_INDEX_NAME = "hamilton_lyrics"
 OPENSEARCH_CONN_ID = "opensearch_default"
 LYRICS_CSV_PATH = "include/hamilton_lyrics.csv"
-KEYWORD_TO_SEARCH = "love"
-MATCH_TYPE = "match_phrase_prefix"
+KEYWORD_TO_SEARCH = "write"
 
 
 @dag(
@@ -94,7 +93,9 @@ def search_hamilton():
         index_name=OPENSEARCH_INDEX_NAME,
         query={
             "size": 0,
-            "query": {MATCH_TYPE: {"lines": KEYWORD_TO_SEARCH}},
+            "query": {
+                "match": {"lines": {"query": KEYWORD_TO_SEARCH, "fuzziness": "AUTO"}}
+            },
             "aggs": {
                 "most_mentions_person": {"terms": {"field": "speaker"}},
                 "most_mentions_song": {"terms": {"field": "title"}},
@@ -103,7 +104,7 @@ def search_hamilton():
     )
 
     @task
-    def print_query_result(query_result: dict, keyword: str, match_type: str) -> None:
+    def print_query_result(query_result: dict, keyword: str) -> None:
         results_most_mentions_person = query_result["aggregations"][
             "most_mentions_person"
         ]["buckets"]
@@ -124,7 +125,6 @@ def search_hamilton():
             f"\n Top 10 Hamilton songs that mention '{keyword}' the most:\n ",
             df_song.head(10).to_string(index=False),
         )
-        print("Type of matching: ", match_type)
 
     chain(
         check_if_index_exists(
@@ -140,7 +140,6 @@ def search_hamilton():
         print_query_result(
             query_result=search_for_keyword.output,
             keyword=KEYWORD_TO_SEARCH,
-            match_type=MATCH_TYPE,
         ),
     )
 
