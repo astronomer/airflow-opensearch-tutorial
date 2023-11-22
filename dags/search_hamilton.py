@@ -32,26 +32,6 @@ KEYWORD_TO_SEARCH = "write"
     catchup=False,
 )
 def search_hamilton():
-    @task
-    def csv_to_dict_list(csv_file_path: str) -> list:
-        with open(csv_file_path, mode="r", encoding="utf-8") as file:
-            reader = csv.DictReader(file)
-            list_of_hamilton_lines = list(reader)
-
-        list_of_kwargs = []
-        for line in list_of_hamilton_lines:
-            unique_line_id = uuid.uuid5(
-                name=" ".join([line["title"], line["speaker"], line["lines"]]),
-                namespace=uuid.NAMESPACE_DNS,
-            )
-            kwargs = {"doc_id": str(unique_line_id), "document": line}
-
-            list_of_kwargs.append(kwargs)
-
-        return list_of_kwargs
-
-    list_of_document_kwargs = csv_to_dict_list(csv_file_path=LYRICS_CSV_PATH)
-
     @task.branch
     def check_if_index_exists(index_name: str, conn_id: str) -> str:
         client = OpenSearchHook(open_search_conn_id=conn_id, log_query=True).client
@@ -79,6 +59,26 @@ def search_hamilton():
     )
 
     index_exists = EmptyOperator(task_id="index_exists")
+
+    @task
+    def csv_to_dict_list(csv_file_path: str) -> list:
+        with open(csv_file_path, mode="r", encoding="utf-8") as file:
+            reader = csv.DictReader(file)
+            list_of_hamilton_lines = list(reader)
+
+        list_of_kwargs = []
+        for line in list_of_hamilton_lines:
+            unique_line_id = uuid.uuid5(
+                name=" ".join([line["title"], line["speaker"], line["lines"]]),
+                namespace=uuid.NAMESPACE_DNS,
+            )
+            kwargs = {"doc_id": str(unique_line_id), "document": line}
+
+            list_of_kwargs.append(kwargs)
+
+        return list_of_kwargs
+
+    list_of_document_kwargs = csv_to_dict_list(csv_file_path=LYRICS_CSV_PATH)
 
     add_lines_as_documents = OpenSearchAddDocumentOperator.partial(
         task_id="add_lines_as_documents",
@@ -118,12 +118,12 @@ def search_hamilton():
         df_song.columns = ["Song", f"Number of lines that include '{keyword}'"]
 
         print(
-            f"\n Top 10 Hamilton characters that mention '{keyword}' the most:\n ",
-            df_person.head(10).to_string(index=False),
+            f"\n Top 3 Hamilton characters that mention '{keyword}' the most:\n ",
+            df_person.head(3).to_string(index=False),
         )
         print(
-            f"\n Top 10 Hamilton songs that mention '{keyword}' the most:\n ",
-            df_song.head(10).to_string(index=False),
+            f"\n Top 3 Hamilton songs that mention '{keyword}' the most:\n ",
+            df_song.head(3).to_string(index=False),
         )
 
     chain(
