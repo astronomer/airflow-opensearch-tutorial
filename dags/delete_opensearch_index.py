@@ -1,3 +1,10 @@
+"""
+## Delete an OpenSearch index
+
+This DAG uses the OpenSearchHook to delete an index in OpenSearch and
+is meant for development purposes.
+"""
+
 from airflow.decorators import dag, task
 from airflow.providers.opensearch.hooks.opensearch import OpenSearchHook
 from pendulum import datetime
